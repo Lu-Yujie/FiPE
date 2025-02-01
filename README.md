@@ -98,8 +98,8 @@ The enumeration methods that find all results.
 
 ## Experiment Datasets
 
-We have placed all the datasets used for testing in the paper at this link: [dataset_CES](https://github.com/Lu-Yujie/FiPE_dataset).
+We have placed all the datasets used for testing in the paper at this link: [dataset_FiPE](https://github.com/Lu-Yujie/FiPE_dataset).
 
 ```bash
-tar -xJf dataset_CES.tar.xz
+7z x FiPE_dataset.7z
 ```
