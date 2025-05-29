@@ -1,8 +1,8 @@
-#ifndef PARTIAL_H
-#define PARTIAL_H
+#ifndef FIPE_H
+#define FIPE_H
 
 /**
- * define data structure used in partial query
+ * define data structure used in FiPE query
  */
 #include <stack>
 #include <unordered_map>
@@ -12,15 +12,15 @@
 #include "pretty_print.h"
 #include "setOp.h"
 #include "timeOp.h"
-#include "partial/IndepSet.h"
-#include "partial/edgeEqu.h"
+#include "FiPE/IndepSet.h"
+#include "FiPE/edgeEqu.h"
 using namespace std;
 typedef unsigned int ui;
 
 /**
  * new index structure, update in time
  */
-class PartialIndex {
+class FiPEIndex {
 public:
   const Graph *q_graph_;
   const Graph *d_graph_;
@@ -31,7 +31,7 @@ public:
 
   deque<Edges *> **index_; // can be used to judge edge existence, index_[u_1][u_2].size() != 0
   Embedding *embedding;
-  PartialIndep *indepInfo;
+  FiPEIndep *indepInfo;
   SubInfo* subInfo_;
   SubCans* subCans_;  // u_id as idx
 
@@ -41,7 +41,7 @@ public:
   static int64_t getNeighbors_time;
 #endif
 
-  PartialIndex(const Graph *q_graph, const Graph *d_graph, Edges ***index, ui **cans, ui *cans_cnt,
+  FiPEIndex(const Graph *q_graph, const Graph *d_graph, Edges ***index, ui **cans, ui *cans_cnt,
                ui num_cover, VertexID* order) {
     q_graph_ = q_graph;
     d_graph_ = d_graph;
@@ -69,7 +69,7 @@ public:
     }
 
     embedding = new Embedding(qnum);
-    indepInfo = new PartialIndep(qnum, dnum, num_cover, order);
+    indepInfo = new FiPEIndep(qnum, dnum, num_cover, order);
     subInfo_ = new SubInfo[num_cover-1];
     for (ui i = 0; i < num_cover-1; i++) {
       visited_u[order[i]] = true;
@@ -79,7 +79,7 @@ public:
     subCans_ = new SubCans[num_cover];
   }
 
-  ~PartialIndex() {
+  ~FiPEIndex() {
     auto qnum = q_graph_->getVerticesCount();
     delete[] visited_u;
     delete[] visited_v;

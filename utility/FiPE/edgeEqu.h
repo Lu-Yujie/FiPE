@@ -138,7 +138,6 @@ public:
   void init(const Graph* g, VertexID* order, ui depth, bool* visited_u, ui num_cover) {
     auto& up = order[depth];
     auto& down = order[depth+1];
-    cout << "init sub up: " << up << ", down: " << down << endl;
     ui u_nbrs_cnt;
     auto u_nbrs = g->getVertexNeighbors(up, u_nbrs_cnt);
     ui d_nbrs_cnt;
@@ -183,8 +182,7 @@ public:
       SetOp::setDifference(nbrs.down_indep_, nbrs.shared_);
       SetOp::setDifference(nbrs.down_indep_, nbrs.delayed_);
     }
-    nbrs.print();
-    cout << "connected: " << connected << endl;
+    // nbrs.print();
 
     // init influenced
     auto vnum = g->getVerticesCount();

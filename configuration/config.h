@@ -31,6 +31,11 @@
 // #define ANALYZE_TIME
 
 /**
+ * Define HOMOMORPHISM to support homomorphism semantics
+ */
+//  #define HOMOMORPHISM
+
+/**
  * Define minimal subset of candidates for backtracking
  */
 #define MIN_SUBCANS 16

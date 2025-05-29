@@ -170,8 +170,6 @@ int main(int argc, char** argv) {
     }
 
     size_t call_count = 0;
-    size_t time_limit = 0;
-    sscanf(input_time_limit.c_str(), "%zu", &time_limit);
 
     start = std::chrono::high_resolution_clock::now();
 

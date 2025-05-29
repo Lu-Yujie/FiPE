@@ -36,7 +36,8 @@ void EvaluateQuery::generateBN(const Graph *query_graph, ui *order, ui *pivot, u
 void
 EvaluateQuery::GeneralEngine(const Graph *data_graph, const Graph *query_graph, Edges ***edge_matrix,
                              ui **candidates, ui *candidates_count, ui *order, ui *pivot,
-                             size_t output_limit_num, size_t &call_count, mpz_t embedding_cnt) {
+                             size_t output_limit_num, size_t &call_count, mpz_t embedding_cnt,
+                             int64_t& time_limit) {
     // Generate the bn.
     ui **bn;
     ui *bn_count;
@@ -284,15 +285,15 @@ void EvaluateQuery::releaseBuffer(ui q_num, ui *idx, ui *idx_count, ui *embeddin
 }
 
 #ifdef ANALYZE_TIME
-int64_t PartialIndex::refine_time = 0;
-int64_t PartialIndex::enumerate_time = 0;
-int64_t PartialIndex::getNeighbors_time = 0;
+int64_t FiPEIndex::refine_time = 0;
+int64_t FiPEIndex::enumerate_time = 0;
+int64_t FiPEIndex::getNeighbors_time = 0;
 #endif
 
 vector<ui> EdgeSub::down_record;
 
 /**
- * use partial method
+ * use FiPE method
 */
 void
 EvaluateQuery::FiPEEngine(const Graph *data_graph, const Graph *query_graph, Edges ***edge_matrix,
@@ -305,10 +306,10 @@ EvaluateQuery::FiPEEngine(const Graph *data_graph, const Graph *query_graph, Edg
 
     // separate indep and cover vertices(min_vertex_cover)
     VertexID* order = new VertexID[qnum];
-    // ui num_cover = PartialIndep::indepSetOnCans(query_graph, order, candidates_count);
-    ui num_cover = PartialIndep::indepSetOnDegree(query_graph, order);
+    // ui num_cover = FiPEIndep::indepSetOnCans(query_graph, order, candidates_count);
+    ui num_cover = FiPEIndep::indepSetOnDegree(query_graph, order);
     // main data structure
-    PartialIndex index(query_graph, data_graph, edge_matrix, candidates, candidates_count, num_cover, order);
+    FiPEIndex index(query_graph, data_graph, edge_matrix, candidates, candidates_count, num_cover, order);
     EdgeSub::down_record.resize(data_graph->getVerticesCount(), (ui)-1);
 
     // auxiliary data structure
@@ -384,14 +385,12 @@ EvaluateQuery::FiPEEngine(const Graph *data_graph, const Graph *query_graph, Edg
                 }
 #endif
                 // enumerate results on indep nodes, process ancestors' ves by the way
-                partialEnum(index);
-                gmp_printf("new result: %Zd\n", level_embeddings);
+                FiPEEnum(index);
                 mpz_add(embedding_cnt, embedding_cnt, level_embeddings);
                 // nxt batch
                 if (subInfo[cur_depth].connected) clearCurSpaceCon(index, cur_depth);
                 else clearCurSpaceDis(index, cur_depth);
             } else {
-                // partialNxtU(index, order, cur_depth, num_cover);
                 // if failed on nxt vertex, try nxt can of last u
                 cur_depth++;
                 splitCans(index, cur_depth);
@@ -442,9 +441,9 @@ EvaluateQuery::FiPEEngine(const Graph *data_graph, const Graph *query_graph, Edg
     // Release the buffer.
     EXIT:
 #ifdef ANALYZE_TIME
-    std::cout << "enumerate_time:    " << PartialIndex::enumerate_time << std::endl;
-    std::cout << "refine_time:       " << PartialIndex::refine_time << std::endl;
-    std::cout << "getNeighbors_time: " << PartialIndex::getNeighbors_time << std::endl;
+    std::cout << "enumerate_time:    " << FiPEIndex::enumerate_time << std::endl;
+    std::cout << "refine_time:       " << FiPEIndex::refine_time << std::endl;
+    std::cout << "getNeighbors_time: " << FiPEIndex::getNeighbors_time << std::endl;
     std::cout << "total_time:        " << TimeOp::getClockNan() - total_time << std::endl;
 #endif
 #ifdef ANALYZE_DUPLICATE
@@ -462,7 +461,7 @@ EvaluateQuery::FiPEEngine(const Graph *data_graph, const Graph *query_graph, Edg
  * split cans when there are too much cans
  */
 inline void
-EvaluateQuery::splitCans(PartialIndex& index, ui depth) {
+EvaluateQuery::splitCans(FiPEIndex& index, ui depth) {
     auto& down = index.order_[depth+1];
     auto& subCans = index.subCans_[depth+1];
     subCans.up_changed = true;
@@ -506,7 +505,7 @@ EvaluateQuery::splitCans(PartialIndex& index, ui depth) {
  * false->splited but have no next subset of cans, true->o.w.
  */
 inline bool
-EvaluateQuery::nxtSubCans(PartialIndex& index, ui depth) {
+EvaluateQuery::nxtSubCans(FiPEIndex& index, ui depth) {
     auto& down = index.order_[depth+1];
     auto& subCans = index.subCans_[depth+1];
     subCans.up_changed = false;
@@ -559,7 +558,7 @@ EvaluateQuery::nxtSubCans(PartialIndex& index, ui depth) {
 
 /**
  * 1.set valid_cans of cur_s
- * 3.push valid_cans from inf_cans to PartialIndex
+ * 3.push valid_cans from inf_cans to FiPEIndex
  * 1.generate sub_cans for next_u
  *   1.1 connected: union of nbrs from (sub_cans of u) to next_u
  *   1.2 o.w.: u will not influence the cans of next_u
@@ -567,7 +566,7 @@ EvaluateQuery::nxtSubCans(PartialIndex& index, ui depth) {
  * return: false, if valid_cans of delayed_nbrs is empty
 */
 bool
-EvaluateQuery::setCurSpaceCon(PartialIndex& index, ui depth) {
+EvaluateQuery::setCurSpaceCon(FiPEIndex& index, ui depth) {
     auto& subInfo = index.subInfo_[depth];
     auto& subs = subInfo.subs;
     auto& down_cans = subInfo.down_cans;  // down_idx->down_cans
@@ -632,7 +631,7 @@ EvaluateQuery::setCurSpaceCon(PartialIndex& index, ui depth) {
         }
     }
 
-    // push valid_cans from inf_cans to PartialIndex
+    // push valid_cans from inf_cans to FiPEIndex
     // use the first as the representative
     auto& up_idx = edge_up_idxs[edge_up_start];
     for (auto& nbr : subInfo.nbrs.up_indep_) {
@@ -655,10 +654,10 @@ EvaluateQuery::setCurSpaceCon(PartialIndex& index, ui depth) {
     return true;
 }
 
-/**pop the valid_cans of influenced_u from PartialIndex
+/**pop the valid_cans of influenced_u from FiPEIndex
 */
 void
-EvaluateQuery::clearCurSpaceCon(PartialIndex& index, ui depth) {
+EvaluateQuery::clearCurSpaceCon(FiPEIndex& index, ui depth) {
     auto& subInfo = index.subInfo_[depth];
     auto& subs = subInfo.subs;
     auto& down_idxs = subInfo.down_idxs;  // edge_idx->down_idx
@@ -670,7 +669,7 @@ EvaluateQuery::clearCurSpaceCon(PartialIndex& index, ui depth) {
     auto& influenced = subInfo.influenced;
     auto& valid_cans = index.valid_cans_;
     auto& delayed_inf = subInfo.delayed_inf;
-    // pop valid_cans from inf_cans to PartialIndex
+    // pop valid_cans from inf_cans to FiPEIndex
     // use the first as the representative
     auto& up_idx = edge_up_idxs[edge_up_start];
     for (auto& nbr : subInfo.nbrs.up_indep_) {
@@ -698,7 +697,7 @@ EvaluateQuery::clearCurSpaceCon(PartialIndex& index, ui depth) {
 }
 
 void
-EvaluateQuery::setCurSpaceDis(PartialIndex& index, ui depth) {
+EvaluateQuery::setCurSpaceDis(FiPEIndex& index, ui depth) {
     auto& subInfo = index.subInfo_[depth];
     auto& subs = subInfo.subs;
     auto& down_cans = subInfo.down_cans;  // down_idx->down_cans
@@ -761,7 +760,7 @@ EvaluateQuery::setCurSpaceDis(PartialIndex& index, ui depth) {
         }
     }
 
-    // push valid_cans from inf_cans to PartialIndex
+    // push valid_cans from inf_cans to FiPEIndex
     // use the first as the representative
     auto& edge_idx = edge_down_idxs[edge_down_start];
     auto up_idx = edge_idx/down_num;
@@ -783,10 +782,10 @@ EvaluateQuery::setCurSpaceDis(PartialIndex& index, ui depth) {
     }
 }
 
-/**pop the valid_cans of influenced_u from PartialIndex
+/**pop the valid_cans of influenced_u from FiPEIndex
 */
 void
-EvaluateQuery::clearCurSpaceDis(PartialIndex& index, ui depth) {
+EvaluateQuery::clearCurSpaceDis(FiPEIndex& index, ui depth) {
     auto& subInfo = index.subInfo_[depth];
     auto& subs = subInfo.subs;
     auto& down_cans = subInfo.down_cans;
@@ -824,7 +823,7 @@ EvaluateQuery::clearCurSpaceDis(PartialIndex& index, ui depth) {
 }
 
 void
-EvaluateQuery::partialEnum(PartialIndex& index) {
+EvaluateQuery::FiPEEnum(FiPEIndex& index) {
 #ifdef ANALYZE_TIME
     auto start_time = TimeOp::getClockNan();
 #endif
@@ -905,8 +904,11 @@ EvaluateQuery::partialEnum(PartialIndex& index) {
                 if (con_num == 0 && uncon == true) {  // no conflicts & searched the no-conflicts case
                     mpz_add(embedding_total, embedding_total, embedding_uncon);
                 } else {
+#ifdef HOMOMORPHISM
+                    index.indepInfo->homoEnum();
+#else
                     index.indepInfo->enumeration(index.q_graph_);
-                    gmp_printf("step result: %Zd\n", embedding_step);
+#endif
                     if (con_num == 0) {  // no conflicts, record the results
                         mpz_set(embedding_uncon, embedding_step);
                         uncon = true;
@@ -978,7 +980,7 @@ EvaluateQuery::partialEnum(PartialIndex& index) {
     }
 
 #ifdef ANALYZE_TIME
-    PartialIndex::enumerate_time += TimeOp::getClockNan() - start_time;
+    FiPEIndex::enumerate_time += TimeOp::getClockNan() - start_time;
 #endif
     return;
 }
@@ -987,7 +989,7 @@ EvaluateQuery::partialEnum(PartialIndex& index) {
  * compute substitutable information for up & down cans
  */
 void
-EvaluateQuery::comSub(PartialIndex& index, ui depth) {
+EvaluateQuery::comSub(FiPEIndex& index, ui depth) {
     auto& subInfo = index.subInfo_[depth];
     auto& up_cans = subInfo.up_cans;
     auto& subs = subInfo.subs;
@@ -1131,7 +1133,7 @@ EvaluateQuery::comSub(PartialIndex& index, ui depth) {
 }
 
 void
-EvaluateQuery::comEdgeSubCon(PartialIndex& index, ui depth) {
+EvaluateQuery::comEdgeSubCon(FiPEIndex& index, ui depth) {
     auto& subInfo = index.subInfo_[depth];
     auto& subs = subInfo.subs;
     auto& up_cans = subInfo.up_cans;
@@ -1299,7 +1301,7 @@ EvaluateQuery::comEdgeSubCon(PartialIndex& index, ui depth) {
 }
 
 void
-EvaluateQuery::comEdgeSubDis(PartialIndex& index, ui depth) {
+EvaluateQuery::comEdgeSubDis(FiPEIndex& index, ui depth) {
     auto& subInfo = index.subInfo_[depth];
     auto& up_cans = subInfo.up_cans;
     auto& down_cans = subInfo.down_cans;
@@ -1425,7 +1427,7 @@ EvaluateQuery::comEdgeSubDis(PartialIndex& index, ui depth) {
  * compute valid_cans of all unbrs for start_vertex
  */
 bool
-EvaluateQuery::comStartCans(PartialIndex& index) {
+EvaluateQuery::comStartCans(FiPEIndex& index) {
     auto u = index.order_[0];
     auto& subInfo = index.subInfo_[0];
     auto& influenced = subInfo.influenced;
@@ -1478,7 +1480,7 @@ EvaluateQuery::comStartCans(PartialIndex& index) {
  * compute valid_cans for down_indep_ & shared_
  */
 bool
-EvaluateQuery::comCurSpace(PartialIndex& index, ui depth) {
+EvaluateQuery::comCurSpace(FiPEIndex& index, ui depth) {
     auto& up = index.order_[depth];
     auto& down = index.order_[depth+1];
     auto& subInfo = index.subInfo_[depth];
@@ -1633,7 +1635,7 @@ EvaluateQuery::comCurSpace(PartialIndex& index, ui depth) {
 }
 
 inline bool
-EvaluateQuery::comSharedCon(PartialIndex& index, ui depth) {
+EvaluateQuery::comSharedCon(FiPEIndex& index, ui depth) {
     auto& subInfo = index.subInfo_[depth];
     auto& up_cans = subInfo.up_cans;
     auto& subs = subInfo.subs;
@@ -1704,7 +1706,7 @@ EvaluateQuery::comSharedCon(PartialIndex& index, ui depth) {
 }
 
 inline bool
-EvaluateQuery::comSharedDis(PartialIndex& index, ui depth) {
+EvaluateQuery::comSharedDis(FiPEIndex& index, ui depth) {
     auto& subInfo = index.subInfo_[depth];
     auto& up_cans = subInfo.up_cans;
     auto& down_cans = subInfo.down_cans;

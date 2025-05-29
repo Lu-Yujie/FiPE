@@ -1,12 +1,12 @@
 // compute min vertex cover based on the #cans
-#ifndef PARTIAL_INDEP_H
-#define PARTIAL_INDEP_H
+#ifndef FIPE_INDEP_H
+#define FIPE_INDEP_H
 
 #include "graph/graph.h"
 #include "gmp.h"
 using namespace std;
 
-class PartialIndep {
+class FiPEIndep {
   ui* indep_con_cnt;    // count the number of times each indep_cans may conflict
   ui** sep_flag;        // seperate indep cans
   mpz_t label_embeddings;  // #embeddings of one kind of label, for enumeration
@@ -27,7 +27,7 @@ public:
   mpz_t embedding_uncon;  // #embeddings of the step without potential conflict
   bool uncon;             // indicates embedding_uncon is search or not
 
-  PartialIndep(ui qnum, ui dnum, ui num_cover, VertexID* order) {
+  FiPEIndep(ui qnum, ui dnum, ui num_cover, VertexID* order) {
     qnum_ = qnum;
     num_cover_ = num_cover;
     cans.resize(qnum);
@@ -55,7 +55,7 @@ public:
     mpz_init(embedding_uncon);
     mpz_init(label_embeddings);
   }
-  ~PartialIndep() {
+  ~FiPEIndep() {
     delete[] indep_con_cnt;
     delete[] indep_bool;
     delete[] used_cans_;
@@ -68,6 +68,13 @@ public:
     mpz_clear(embedding_total);
     mpz_clear(embedding_uncon);
     mpz_clear(label_embeddings);
+  }
+
+  void homoEnum() {
+    mpz_set_ui(embedding_step, 1);
+    for (auto can:cans) {
+      mpz_mul_ui(embedding_step, embedding_step, can.size());
+    }
   }
 
   void enumeration(const Graph*q_graph) {
@@ -115,7 +122,6 @@ public:
             // int backward_idx = v_cans_cnt - 1;
             for (ui j = 0; j < v_cans_cnt; j++) indep_con_cnt[v_cans[j]]--;
             downward_sep0 = sepDiff(v_cans, indep_con_cnt, forward_idx, v_cans_cnt - 1);
-            // downward_sep1 = partialSepDiff(v_cans, indep_con_cnt, middle_idx, backward_idx);
         }
         // 3.enumerate the nodes based on diff features of 4 parts
         // ** just 2 parts so far

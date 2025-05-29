@@ -1,7 +1,7 @@
 #ifndef SUBGRAPHMATCHING_EVALUATEQUERY_H
 #define SUBGRAPHMATCHING_EVALUATEQUERY_H
 
-#include "utility/partial/partial.h"
+#include "utility/FiPE/FiPE.h"
 #include <vector>
 #include <queue>
 #include <unordered_set>
@@ -33,32 +33,32 @@ private:
                                             bool *visited_vertices, ui **bn, ui *bn_cnt, ui *order, ui *pivot,
                                             ui **candidates, const Graph *query_graph);
 
-    static void partialEnum(PartialIndex& index);
+    static void FiPEEnum(FiPEIndex& index);
 
-    static bool comSharedDis(PartialIndex& index, ui depth);
+    static bool comSharedDis(FiPEIndex& index, ui depth);
 
-    static bool comSharedCon(PartialIndex& index, ui depth);
+    static bool comSharedCon(FiPEIndex& index, ui depth);
 
-    static bool comCurSpace(PartialIndex& index, ui depth);
+    static bool comCurSpace(FiPEIndex& index, ui depth);
 
-    static bool setCurSpaceCon(PartialIndex& index, ui depth);
+    static bool setCurSpaceCon(FiPEIndex& index, ui depth);
 
-    static void clearCurSpaceCon(PartialIndex& index, ui depth);
+    static void clearCurSpaceCon(FiPEIndex& index, ui depth);
 
-    static void setCurSpaceDis(PartialIndex& index, ui depth);
+    static void setCurSpaceDis(FiPEIndex& index, ui depth);
 
-    static void clearCurSpaceDis(PartialIndex& index, ui depth);
+    static void clearCurSpaceDis(FiPEIndex& index, ui depth);
 
-    static void comSub(PartialIndex& index, ui depth);
+    static void comSub(FiPEIndex& index, ui depth);
 
-    static void comEdgeSubCon(PartialIndex& index, ui depth);
+    static void comEdgeSubCon(FiPEIndex& index, ui depth);
 
-    static void comEdgeSubDis(PartialIndex& index, ui depth);
+    static void comEdgeSubDis(FiPEIndex& index, ui depth);
 
-    static bool comStartCans(PartialIndex& index);
+    static bool comStartCans(FiPEIndex& index);
 
-    inline static void splitCans(PartialIndex& index, ui depth);
-    inline static bool nxtSubCans(PartialIndex& index, ui depth);
+    inline static void splitCans(FiPEIndex& index, ui depth);
+    inline static bool nxtSubCans(FiPEIndex& index, ui depth);
 };
 
 
