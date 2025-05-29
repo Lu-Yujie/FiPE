@@ -4,6 +4,7 @@
 #include <utility/graphoperations.h>
 #include <vector>
 #include <algorithm>
+#include "common.h"
 
 /**
  * label and degree filtering
@@ -106,6 +107,9 @@ FilterVertices::CFLFilter(const Graph *data_graph, const Graph *query_graph, ui 
 
     compactCandidates(candidates, candidates_count, query_graph->getVerticesCount());
 
+#ifdef ANALYZE_FUNC_MEMORY
+    mem::printVmRSS("Filter");
+#endif
     delete[] updated_flag;
     delete[] flag;
     return isCandidateSetValid(candidates, candidates_count, query_graph->getVerticesCount());

@@ -10,6 +10,7 @@ MatchingCommand::MatchingCommand(const int argc, char **argv) : CommandParser(ar
     options_key[OptionKeyword::MaxOutputEmbeddingNum] = "-num";
     options_key[OptionKeyword::TimeLimit] = "-time_limit";
     options_key[OptionKeyword::DuplicatePath] = "-duplicate_path";
+    options_key[OptionKeyword::MemoryFile] = "-memory_file";
     processOptions();
 };
 
@@ -35,6 +36,9 @@ void MatchingCommand::processOptions() {
     // Time Limit
     options_value[OptionKeyword::TimeLimit] = getCommandOption(options_key[OptionKeyword::TimeLimit]);
 
-    // Time Limit
+    // Duplicate Path
     options_value[OptionKeyword::DuplicatePath] = getCommandOption(options_key[OptionKeyword::DuplicatePath]);
+
+    // Memory File
+    options_value[OptionKeyword::MemoryFile] = getCommandOption(options_key[OptionKeyword::MemoryFile]);
 }

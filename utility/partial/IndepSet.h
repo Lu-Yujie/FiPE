@@ -210,6 +210,10 @@ public:
       mpz_add(embedding_level[depth], embedding_level[depth], embedding_level[depth+1]);
     }
 
+#ifdef ANALYZE_FUNC_MEMORY
+    mem::printVmRSS("Enumerate");
+#endif
+
     delete[] idx;
     delete[] cnt;
     delete[] un_con_cnt;

@@ -5,6 +5,8 @@
  * some common structures
  */
 #include <vector>
+#include <fstream>
+#include <sstream>
 #include "graph/graph.h"
 using namespace std;
 typedef unsigned int ui;
@@ -75,36 +77,45 @@ public:
   }
 };
 
-namespace peak_mem {
-  /**
-   * get peak virtual memory space of the current process
-   * https://stackoverflow.com/questions/63166/how-to-determine-cpu-and-memory-consumption-from-inside-a-process#answer-64166
-   */
-  inline int parseLine(char *line) {
-    // This assumes that a digit will be found and the line ends in " Kb".
-    int i = strlen(line);
-    const char *p = line;
-    while (*p < '0' || *p > '9')
-      p++;
-    line[i - 3] = '\0';
-    i = atoi(p);
-    return i;
-  }
-
-  inline int getValue() { // Note: this value is in KB!
-    FILE *file = fopen("/proc/self/status", "r");
-    int result = -1;
-    char line[128];
-
-    while (fgets(line, 128, file) != NULL) {
-      if (strncmp(line, "VmPeak:", 7) == 0) {
-        result = parseLine(line);
-        break;
-      }
+class mem {  // the unit is KB
+public:
+  static std::ofstream mem_out;
+  static size_t getVmPeak() {
+    std::ifstream status("/proc/self/status");
+    std::string line;
+    while (std::getline(status, line)) {
+        if (line.substr(0, 7) == "VmPeak:") {
+            std::istringstream iss(line);
+            std::string key, unit;
+            size_t value;
+            iss >> key >> value >> unit;
+            std::cout << "value:" << value << std::endl;
+            return value;
+        }
     }
-    fclose(file);
-    return result;
+    return 0;
   }
-}
+  static bool initMem(std::string file) {
+    mem_out.open(file, std::ios::out | std::ios::app);
+    return mem_out.is_open();
+  }
+  static void closeMem() {
+    mem_out.close();
+  }
+  static void printVmRSS(std::string prompt) {
+    std::ifstream status("/proc/self/status");
+    std::string line;
+    while (std::getline(status, line)) {
+        if (line.substr(0, 6) == "VmRSS:") {
+            std::istringstream iss(line);
+            std::string key, unit;
+            size_t value;
+            iss >> key >> value >> unit;
+            mem_out << prompt << ": " << value << std::endl;
+            return;
+        }
+    }
+  }
+};
 
 #endif

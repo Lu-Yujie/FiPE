@@ -11,9 +11,14 @@
 #define OPTIMIZED_VLABELED_GRAPH 1
 
 /**
- * Define ANALYZE_MEMORY to analyze memory consumption
+ * Define ANALYZE_PEAK_MEMORY to analyze peak memory consumption
  */
-// #define ANALYZE_MEMORY
+// #define ANALYZE_PEAK_MEMORY
+
+/**
+ * Define ANALYZE_FUNC_MEMORY to analyze function memory consumption
+ */
+//  #define ANALYZE_FUNC_MEMORY
 
 /**
  * Define ANALYZE_DUPLICATE to enable the record the duplicate information

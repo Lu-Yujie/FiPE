@@ -13,6 +13,8 @@
 #define BYTESTOMB(memory_cost) ((memory_cost)/(double)(1024 * 1024))
 #define KBTOMB(memory_cost) ((memory_cost)/(double)(1024))
 
+std::ofstream mem::mem_out;
+
 int main(int argc, char** argv) {
     MatchingCommand command(argc, argv);
     std::string input_query_graph_file = command.getQueryGraphFilePath();
@@ -23,6 +25,7 @@ int main(int argc, char** argv) {
     std::string input_max_embedding_num = command.getMaximumEmbeddingNum();
     std::string input_time_limit = command.getTimeLimit();
     std::string duplicate_path = command.getDuplicatePath();
+    std::string memory_file = command.getMemoryFile();
 
     /**
      * Output the command line information.
@@ -35,6 +38,12 @@ int main(int argc, char** argv) {
     std::cout << "\tEngine Type: " << input_engine_type << std::endl;
     std::cout << "\tOutput Limit: " << input_max_embedding_num << std::endl;
     std::cout << "\tTime Limit (seconds): " << input_time_limit << std::endl;
+#ifdef ANALYZE_DUPLICATE
+    std::cout << "\tDuplicate Path: " << duplicate_path << std::endl;
+#endif
+#ifdef ANALYZE_FUNC_MEMORY
+    std::cout << "\tMemory Path: " << memory_file << std::endl;
+#endif
     std::cout << "--------------------------------------------------------------------" << std::endl;
 
     /**
@@ -61,6 +70,15 @@ int main(int argc, char** argv) {
     query_graph->printGraphMetaData();
     std::cout << "-----" << std::endl;
     data_graph->printGraphMetaData();
+    int64_t time_limit; // 300s by default
+    sscanf(input_time_limit.c_str(), "%ld", &time_limit); // second
+    auto end_time = TimeOp::getClockNan();
+    end_time += time_limit * 1000 * 1000;
+
+#ifdef ANALYZE_FUNC_MEMORY
+    mem::initMem(memory_file);
+    mem::printVmRSS("Build_Graph");
+#endif
 
     std::cout << "--------------------------------------------------------------------" << std::endl;
 
@@ -158,11 +176,11 @@ int main(int argc, char** argv) {
     start = std::chrono::high_resolution_clock::now();
 
     if (input_engine_type == "General") {
-        EvaluateQuery::GeneralEngine(data_graph, query_graph, edge_matrix, candidates,
-                                                      candidates_count, matching_order, pivots, output_limit, call_count, embedding_cnt);
+        EvaluateQuery::GeneralEngine(data_graph, query_graph, edge_matrix, candidates, candidates_count,
+                                     matching_order, pivots, output_limit, call_count, embedding_cnt, end_time);
     } else if (input_engine_type == "FiPE") {
         EvaluateQuery::FiPEEngine(data_graph, query_graph, edge_matrix, candidates, candidates_count,
-                output_limit, call_count, embedding_cnt);
+                                  output_limit, call_count, embedding_cnt, end_time);
     } else {
         std::cout << "The specified engine type '" << input_engine_type << "' is not supported." << std::endl;
         exit(-1);
@@ -218,8 +236,8 @@ int main(int argc, char** argv) {
     gmp_printf("#Embeddings: %Zd\n", embedding_cnt);
     printf("Call Count: %zu\n", call_count);
     printf("Per Call Count Time (nanoseconds): %.4lf\n", enumeration_time_in_ns / (call_count == 0 ? 1 : call_count));
-#ifdef ANALYZE_MEMORY
-    printf("Memory cost (MB): %.4lf\n", KBTOMB(peak_mem::getValue()));
+#ifdef ANALYZE_PEAK_MEMORY
+    printf("Memory cost (MB): %.4lf\n", KBTOMB(mem::getVmPeak()));
 #endif
     std::cout << "End." << std::endl;
 
@@ -244,8 +262,8 @@ int main(int argc, char** argv) {
     char *cnt = mpz_get_str(NULL, 10, embedding_cnt);
     output << "," << cnt;
     output << "," << call_count;
-#ifdef ANALYZE_MEMORY
-    output << "," << peak_mem::getValue();  // KB
+#ifdef ANALYZE_PEAK_MEMORY
+    output << "," << mem::getVmPeak();  // KB
 #endif
     output << std::endl;
     

@@ -1,6 +1,7 @@
 #include "BuildEdgeIndex.h"
 #include <vector>
 #include <algorithm>
+#include "common.h"
 
 // TODO: There is no need to establish bidirectional neighbors.
 // Once an order is given, simply generate edges in the order of the order, as reverse checking is not possible.
@@ -128,6 +129,8 @@ void BuildEdgeIndex::buildCansIdxIndex(const Graph *data_graph, const Graph *que
             flag[v] = 0;
         }
     }
+    delete[] updated_flag;
+    delete[] flag;
 }
 
 void
@@ -249,4 +252,9 @@ BuildEdgeIndex::buildCansIndex(const Graph *data_graph, const Graph *query_graph
             flag[v] = 0;
         }
     }
+#ifdef ANALYZE_FUNC_MEMORY
+    mem::printVmRSS("Build_Index");
+#endif
+    delete[] updated_flag;
+    delete[] flag;
 }

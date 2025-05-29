@@ -93,6 +93,9 @@ EvaluateQuery::GeneralEngine(const Graph *data_graph, const Graph *query_graph, 
 
     while (true) {
         while (idx[cur_depth] < idx_count[cur_depth]) {
+            if (TimeOp::getClockNan() >= time_limit) {
+                goto EXIT;
+            }
             ui valid_idx = valid_candidate_idx[cur_depth][idx[cur_depth]];
             VertexID u = order[cur_depth];
             VertexID v = candidates[u][valid_idx];
@@ -293,28 +296,17 @@ vector<ui> EdgeSub::down_record;
 */
 void
 EvaluateQuery::FiPEEngine(const Graph *data_graph, const Graph *query_graph, Edges ***edge_matrix,
-                             ui **candidates, ui *candidates_count,
-                             size_t output_limit_num, size_t &call_count, mpz_t embedding_cnt) {
+                          ui **candidates, ui *candidates_count, size_t output_limit_num,
+                          size_t &call_count, mpz_t embedding_cnt, int64_t& time_limit) {
 #ifdef ANALYZE_TIME
     auto total_time = TimeOp::getClockNan();
 #endif
     auto qnum = query_graph->getVerticesCount();
 
-    for (ui i = 0; i < qnum; i++) {
-        cout << i << ", " << candidates_count[i] << ": ";
-        for (ui j = 0; j < candidates_count[i]; j++) {
-            cout << candidates[i][j] << ", ";
-        }
-        cout << endl;
-    }
-
     // separate indep and cover vertices(min_vertex_cover)
     VertexID* order = new VertexID[qnum];
     // ui num_cover = PartialIndep::indepSetOnCans(query_graph, order, candidates_count);
     ui num_cover = PartialIndep::indepSetOnDegree(query_graph, order);
-    cout << "cover: #" << num_cover << ": ";
-    for (ui i = 0; i < num_cover; i++) cout << order[i] << ", ";
-    cout << endl;
     // main data structure
     PartialIndex index(query_graph, data_graph, edge_matrix, candidates, candidates_count, num_cover, order);
     EdgeSub::down_record.resize(data_graph->getVerticesCount(), (ui)-1);
@@ -325,7 +317,6 @@ EvaluateQuery::FiPEEngine(const Graph *data_graph, const Graph *query_graph, Edg
     VertexID start_vertex = order[cur_depth];
     auto& level_embeddings = index.indepInfo->embedding_total;
     auto& subInfo = index.subInfo_;
-    cout << "start_vertex: " << start_vertex << endl;
 
 #ifdef ANALYZE_DUPLICATE
     auto g_name = query_graph->duplicate_path;
@@ -359,8 +350,10 @@ EvaluateQuery::FiPEEngine(const Graph *data_graph, const Graph *query_graph, Edg
 
     while (true) {
         while (subInfo[cur_depth].subs.cur_s < subInfo[cur_depth].subs.c_cnt) {
+            if (TimeOp::getClockNan() >= time_limit) {
+                goto EXIT;
+            }
             VertexID u = order[cur_depth];
-            cout << "u: " << u << ", cur_s: " << subInfo[cur_depth].subs.cur_s << endl;
 
             if (subInfo[cur_depth].connected) setCurSpaceCon(index, cur_depth);
             else setCurSpaceDis(index, cur_depth);
@@ -458,6 +451,9 @@ EvaluateQuery::FiPEEngine(const Graph *data_graph, const Graph *query_graph, Edg
     for (ui i = 1; i < qnum; i++) { 
         out_files[i-1].close();
     }
+#endif
+#ifdef ANALYZE_FUNC_MEMORY
+    mem::printVmRSS("Engine");
 #endif
     return;
 }
@@ -587,7 +583,6 @@ EvaluateQuery::setCurSpaceCon(PartialIndex& index, ui depth) {
     auto& influenced = subInfo.influenced;
     auto& inf_cans = subInfo.inf_cans;
     auto& valid_cans = index.valid_cans_;
-    cout << "set space con of depth: " << depth << ", cur_s: " << subs.cur_s << endl;
 
     if (depth < index.indepInfo->num_cover_-2) {
         // compute up_cans of nxtSub
@@ -664,7 +659,6 @@ EvaluateQuery::setCurSpaceCon(PartialIndex& index, ui depth) {
 */
 void
 EvaluateQuery::clearCurSpaceCon(PartialIndex& index, ui depth) {
-    cout << "clear con depth: " << depth << endl;
     auto& subInfo = index.subInfo_[depth];
     auto& subs = subInfo.subs;
     auto& down_idxs = subInfo.down_idxs;  // edge_idx->down_idx
@@ -717,7 +711,6 @@ EvaluateQuery::setCurSpaceDis(PartialIndex& index, ui depth) {
     auto& inf_cans = subInfo.inf_cans;
     auto& valid_cans = index.valid_cans_;
     ui down_num = down_cans.size();
-    cout << "set space dis of depth: " << depth << ", cur_s: " << subs.cur_s << endl;
 
     if (depth < index.indepInfo->num_cover_-2) {
         // compute up_cans of nxtSub
@@ -794,7 +787,6 @@ EvaluateQuery::setCurSpaceDis(PartialIndex& index, ui depth) {
 */
 void
 EvaluateQuery::clearCurSpaceDis(PartialIndex& index, ui depth) {
-    cout << "clear dis depth: " << depth << endl;
     auto& subInfo = index.subInfo_[depth];
     auto& subs = subInfo.subs;
     auto& down_cans = subInfo.down_cans;
@@ -850,16 +842,13 @@ EvaluateQuery::partialEnum(PartialIndex& index) {
     auto& embedding_step = index.indepInfo->embedding_step;
     auto& cans = index.indepInfo->cans;
     auto& visited_v = index.visited_v;
-    cout << "cans of indep:" << endl;
     auto& subInfo = index.subInfo_;
 
     // extract the candidates of indep vertices
     for (VertexID i = 0; i < qnum; i++) {
         if (index.indepInfo->indep_bool[i]) {
-            cout << i << ": ";
             cans[i] = index.valid_cans_[i].back();
-            for (auto& can:cans[i]) used_cans[can] = true, cout << can << ", ";
-            cout << endl;
+            for (auto& can:cans[i]) used_cans[can] = true;
         }
     }
 
@@ -902,7 +891,6 @@ EvaluateQuery::partialEnum(PartialIndex& index) {
             up_down_idxs[depth] = make_pair(up_idx, down_idx);
             auto& up = index.subInfo_[depth].up_cans[up_idx];
             auto& down = index.subInfo_[depth].down_cans[down_idx];
-            cout << "depth: " << depth << ", up: " << up << ", down: " << down << endl;
             if (depth == 0) {
                 if (up == down) continue;
                 cans[order[depth]][0] = up;
@@ -1017,7 +1005,6 @@ EvaluateQuery::comSub(PartialIndex& index, ui depth) {
     auto& p_cnt = subs.p_cnt;
     auto& p_offset = subs.p_edge_up_offset;
     auto& p_idxs = subs.p_edge_up_idxs;
-    cout << "compute sub for depth: " << depth << endl;
     bool same = true;
 
     // init up subs
@@ -1071,7 +1058,6 @@ EvaluateQuery::comSub(PartialIndex& index, ui depth) {
         c_offset.swap(p_offset);
         c_cnt = p_cnt;
     }
-    cout << "up_cnt: " << c_cnt << endl;
 
     // down_indep, seperate down_cans(idxs)
     auto& down_group_num = subInfo.subs.down_group_num;
@@ -1135,7 +1121,6 @@ EvaluateQuery::comSub(PartialIndex& index, ui depth) {
         c_offset.swap(p_offset);
         c_cnt = p_cnt;
     }
-    cout << "down_cnt: " << c_cnt << endl;
     // after up_indep & down_indep info, compute edge info
     if (subInfo.connected) {
         comEdgeSubCon(index, depth);
@@ -1307,8 +1292,9 @@ EvaluateQuery::comEdgeSubCon(PartialIndex& index, ui depth) {
         c_edge_down_offset.swap(p_edge_down_offset);
         c_cnt = p_cnt;
     }
-
-    cout << "edge substitutabl info of depth: " << depth << ", #c_cnt: " << c_cnt << endl;
+#ifdef ANALYZE_FUNC_MEMORY
+    mem::printVmRSS("Edge_Equ_Con");
+#endif
     return;
 }
 
@@ -1429,8 +1415,9 @@ EvaluateQuery::comEdgeSubDis(PartialIndex& index, ui depth) {
         c_edge_down_offset.swap(p_edge_down_offset);
         c_cnt = p_cnt;
     }
-
-    cout << "edge substitutable information(dis) for depth: " << depth << ", c_cnt: " << c_cnt << endl;
+#ifdef ANALYZE_FUNC_MEMORY
+    mem::printVmRSS("Edge_Equ_Dis");
+#endif
     return;
 }
 
@@ -1456,8 +1443,6 @@ EvaluateQuery::comStartCans(PartialIndex& index) {
     up_cans.clear();
     up_cans.reserve(can_cnt);
 
-    cout << "comStartCans u: " << u << endl;
-
     // compute the valid_cans of all nbrs for each cans
     ui unbrs_cnt;
     auto unbrs = index.q_graph_->getVertexNeighbors(u, unbrs_cnt);
@@ -1472,7 +1457,6 @@ EvaluateQuery::comStartCans(PartialIndex& index) {
             auto vnbrs_cnt = edges.offset_[edge_idx + 1] - edges.offset_[edge_idx];
             if (vnbrs_cnt == 0) {
                 valid = false;
-                cout << "check fail on unbr: " << unbr << ", v:" << v << endl;
                 break;
             }
         }
@@ -1487,7 +1471,6 @@ EvaluateQuery::comStartCans(PartialIndex& index) {
             }
         }
     }
-    cout << "refine-valid_idx: " << up_cans.size() << endl;
     return up_cans.size();  // 0->false, o.w.->true
 }
 
@@ -1505,7 +1488,6 @@ EvaluateQuery::comCurSpace(PartialIndex& index, ui depth) {
     auto& up2down = subInfo.up2down;       // valid_cans of nxt
     auto& down_record = subInfo.subs.down_record;
     bool success = true;
-    cout << "compute current space for depth: " << depth << ", up: " << up << ", down: " << down << endl;
 
     // 1.compute the valid_cans of shared for up
     auto& up_shared_valid_cans = subInfo.up_shared_valid_cans;      // cans of [unbr][up_idx]
@@ -1538,7 +1520,6 @@ EvaluateQuery::comCurSpace(PartialIndex& index, ui depth) {
             edge_down_offset.emplace_back(edge_down_offset.back()+vnbrs.size());
             up2down.insert(up2down.end(), move(vnbrs.begin()), move(vnbrs.end()));
         }
-        cout << "up2down.size(): " << up2down.size() << endl;
     }
 
     // compute the down_cans
@@ -1591,7 +1572,6 @@ EvaluateQuery::comCurSpace(PartialIndex& index, ui depth) {
             if (vnbrs.size() == 0) {
                 down_valid[v_idx] = false;
                 down_valid_idx--;
-                cout << "check fail on unbr down_indep: " << unbr << ", v:" << v << endl;
                 break;
             }
             if (index.valid_cans_[unbr].back().size() == vnbrs.size()) {
@@ -1609,7 +1589,6 @@ EvaluateQuery::comCurSpace(PartialIndex& index, ui depth) {
             if (vnbrs.size() == 0) {
                 down_valid_idx--;
                 down_valid[v_idx] = false;
-                cout << "check fail on unbr shared: " << unbr << ", v:" << v << endl;
                 break;
             }
             down_shared_valid_cans[unbr][down_valid_idx].swap(vnbrs);
@@ -1620,7 +1599,6 @@ EvaluateQuery::comCurSpace(PartialIndex& index, ui depth) {
             if (vnbrs.size() == 0) {
                 down_valid[v_idx] = false;
                 down_valid_idx--;
-                cout << "check fail on unbr delayed_nbrs: " << unbr << ", v:" << v << endl;
                 break;
             }
             if (index.valid_cans_[unbr].back().size() == vnbrs.size()) {

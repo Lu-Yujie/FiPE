@@ -5,14 +5,15 @@
 #include <map>
 #include <iostream>
 enum OptionKeyword {
-    QueryGraphFile,             // -q, The query graph file path, compulsive parameter
-    DataGraphFile,              // -d, The data graph file path, compulsive parameter
-    Filter,                     // -filter, The strategy of filtering
-    Order,                      // -order, The strategy of ordering
-    Engine,                     // -engine, The computation engine
-    MaxOutputEmbeddingNum,      // -num, The maximum output embedding num
-    TimeLimit,  // -time_limit, The time limit for executing a query in seconds
-    DuplicatePath,  // -duplicate_path, The output path for duplication analysis
+    QueryGraphFile,         // -q, The query graph file path, compulsive parameter
+    DataGraphFile,          // -d, The data graph file path, compulsive parameter
+    Filter,                 // -filter, The strategy of filtering
+    Order,                  // -order, The strategy of ordering
+    Engine,                 // -engine, The computation engine
+    MaxOutputEmbeddingNum,  // -num, The maximum output embedding num
+    TimeLimit,              // -time_limit, The time limit for executing a query in seconds
+    DuplicatePath,          // -duplicate_path, The output path for duplication analysis
+    MemoryFile,             // -memory_file, The output file for memory analysis
     };
 
 class MatchingCommand : public CommandParser{
@@ -43,7 +44,7 @@ public:
     }
 
     std::string getEngineType() {
-        return options_value[OptionKeyword::Engine] == "" ? "LFTJ" : options_value[OptionKeyword::Engine];
+        return options_value[OptionKeyword::Engine] == "" ? "FiPE" : options_value[OptionKeyword::Engine];
     }
 
     std::string getMaximumEmbeddingNum() {
@@ -51,11 +52,15 @@ public:
     }
 
     std::string getTimeLimit() {
-        return options_value[OptionKeyword::TimeLimit] == "" ? "1" : options_value[OptionKeyword::TimeLimit];
+        return options_value[OptionKeyword::TimeLimit] == "" ? "1000" : options_value[OptionKeyword::TimeLimit];
     }
 
     std::string getDuplicatePath() {
-        return options_value[OptionKeyword::DuplicatePath] == "" ? "1" : options_value[OptionKeyword::DuplicatePath];
+        return options_value[OptionKeyword::DuplicatePath] == "" ? "." : options_value[OptionKeyword::DuplicatePath];
+    }
+
+    std::string getMemoryFile() {
+        return options_value[OptionKeyword::MemoryFile] == "" ? "mem.txt" : options_value[OptionKeyword::MemoryFile];
     }
 
 };
