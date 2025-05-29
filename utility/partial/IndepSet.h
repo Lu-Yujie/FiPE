@@ -329,6 +329,12 @@ public:
       }
     }
 
+    if (cover_num == 1) {
+      ui nbr_cnt = 0;
+      const auto& nbrs = graph->getVertexNeighbors(order[0], nbr_cnt);
+      order[cover_num++] = nbrs[0];
+    }
+
     delete[] visited;
     delete[] connected;
     return cover_num;
@@ -370,6 +376,12 @@ public:
         VertexID neighbor = edges[i];
         degree[neighbor]--;
       }
+    }
+
+    if (cover_num == 1) {
+      ui nbr_cnt = 0;
+      const auto& nbrs = graph->getVertexNeighbors(order[0], nbr_cnt);
+      order[cover_num++] = nbrs[0];
     }
 
     return cover_num;
