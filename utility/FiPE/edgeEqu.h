@@ -1,8 +1,8 @@
-// equivalent information
+// edge equivalent information
 #ifndef EDGE_EQUIVALENT_H
 #define EDGE_EQUIVALENT_H
 #include "graph/graph.h"
-#include "setOp.h"
+#include "bsx/SetOp.h"
 #include<unordered_map>
 using namespace std;
 
@@ -46,9 +46,6 @@ public:
   vector<ui> p_edge_down_offset;
   vector<ui> p_edge_down_idxs;
 
-  ui down_cnt;
-  vector<ui> down_offset;
-  vector<ui> down_group_idxs;
   vector<ui> down_group_num;  // group_id of each down_cans
   vector<ui> up_group_num;  // group_id of each up_cans
 

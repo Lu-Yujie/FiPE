@@ -7,8 +7,12 @@ set(SUBGRAPH_MATCHING_FILE_LIST
     GenerateFilteringPlan.cpp
     Experiment.cpp)
 
+include_directories(
+    ${PROJECT_SOURCE_DIR}/sourceCode
+)
+
 add_executable(BS ${SUBGRAPH_MATCHING_FILE_LIST})
-target_link_libraries(BS graph utility)
+target_link_libraries(BS RM VEQ)
 target_link_libraries(BS gmp)
 
 # set ouput path

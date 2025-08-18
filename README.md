@@ -11,40 +11,29 @@ Under the root directory of the project, execute the following commands to compi
 mkdir build
 cd build
 cmake ..
-make
+make -j16
 ```
-
-## Correctness Verification
-
-We provide 200 test cases along with the corresponding test script. The usage is as follows:
-
-```bash
-python test.py ../build/matching/BS
-```
-
-If all 200 cases pass correctly, the following text will be displayed:
-
-```bash
-{your_method_name} engine passed the correctness check.
-```
-
-Additionally, we provide a script(_check_result.py_) for comparing results between different methods as an auxiliary tool for verifying the correctness of the code. Please refer to the script comments for specific usage instructions.
 
 ## Execute
 
-After compiling the source code, you can find the binary file 'BS' under the 'build/matching' directory.
-Execute the binary with the following command ./BS -d data_graph -q query_graph
--filter filter_technique -order order_technique -engine engine_technique -num max_number_of_embeddings -time_limit max_execute_time,
-in which -d specifies the input of the data graphs and -q specifies the input of the query graphs.
-The -filter parameter gives the filtering method, the -order specifies the ordering method, and the -engine
-sets the enumeration method. The -num parameter sets the maximum number of embeddings that you would like to find. The time_time constrains the maximum execution time. If the number of embeddings enumerated reaches the limit or all the results have been found or the time limit is reached, then the program will terminate.
-Set -num as 'MAX' to find all results.
+After compiling the source code, you can find the binary file 'BS' under the 'build/bin' directory.
+Execute the binary with the following command ./BS -d data_graph -q query_graph 
+-num max_number_of_embeddings -time_limit max_execute_time -o output_file -conf configuration_of_methods.
+|Parameter of Command Line (-filter) | Description |
+| :-----------------------------------: | :-------------: |
+|-d| the data graph |
+|-q| the query graph |
+|-num| the maximum number of embeddings, set -num as 'MAX' to find all results |
+|-time_limit| the maximum execution time |
+|-conf| the path to your configuration files which specify methods to run |
+|-o| the output file |
+
 
 Example (Use the filtering method of CFL and order method of GraphQL to generate the candidate vertex sets and the matching order respectively.
 Enumerate results with the set-intersection based local candidate computation method):
 
 ```zsh
-./BS -d ../../test/sample_dataset/test_case_1.graph -q ../../test/sample_dataset/query1_positive.graph -filter CFL -order GQL -engine General -num MAX
+./build/bin/BS -d ./valid/sample_dataset/test_case_1.graph -q ./valid/sample_dataset/query1_positive.graph -num MAX -o ./output_file.csv -conf ./valid/conf -time_limit 1
 ```
 
 ## Input
@@ -76,26 +65,36 @@ e 3 4
 
 The filtering methods that generate candidate vertex sets.
 
-|Parameter of Command Line (-filter) | Description |
+|Supported filtering methods | Description |
 | :-----------------------------------: | :-------------: |
 |LDF| the label degree filter |
 |NLF| the neighborhood label frequency filter |
 |CFL| the filtering method of CFL|
 |DPiso| the filtering method of DP-iso |
+|GQL| the filtering method of GQL |
+|TSO| the filtering method of TurboIso |
+|CaLiG| the filtering method of CaLiG |
+|RM| the filtering method of RapidMatch |
 
 The ordering methods that generate matching order.
 
-|Parameter of Command Line (-order) | Description |
+|Supported ordering methods | Description |
 | :-----------------------------------: | :-------------: |
 |GQL| the ordering method of GraphQL |
+|DPiso| the ordering method of DP-iso |
+|RM| the ordering method of RapidMatch |
 
 The enumeration methods that find all results.
 
-|Parameter of Command Line (-engine) | Description |
+|Supported engine methods | Description |
 | :-----------------------------------: | :-------------: |
-|General| Naive-Backtracking Search |
+|BS1| Naive-Backtracking Search |
+|BSX| Batch-Backtracking Search |
+|RM| RapidMatch |
+|KSS| Kernel and Shell |
 |FiPE| Fine-grained and Powerful Equivalences |
 
+Besides, we also integrate VEQ to this framework.
 ## Experiment Datasets
 
 We have placed all the datasets used for testing in the paper at this link: [dataset_FiPE](https://github.com/Lu-Yujie/FiPE_dataset).

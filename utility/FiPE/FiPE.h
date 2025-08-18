@@ -1,5 +1,5 @@
-#ifndef FIPE_H
-#define FIPE_H
+#ifndef LU_FIPE_H
+#define LU_FIPE_H
 
 /**
  * define data structure used in FiPE query
@@ -10,7 +10,7 @@
 #include <gmp.h>
 #include "common.h"
 #include "pretty_print.h"
-#include "setOp.h"
+#include "bsx/SetOp.h"
 #include "timeOp.h"
 #include "FiPE/IndepSet.h"
 #include "FiPE/edgeEqu.h"
@@ -93,7 +93,6 @@ public:
       delete[] index_[i];
     }
     delete[] index_;
-    delete[] order_;
     delete[] valid_cans_;
     delete embedding;
     delete indepInfo;

@@ -2,3 +2,5 @@
 build
 .vscode
 valid
+# for code develop compile
+abuild

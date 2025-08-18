@@ -4,13 +4,10 @@ MatchingCommand::MatchingCommand(const int argc, char **argv) : CommandParser(ar
     // Initialize options value
     options_key[OptionKeyword::QueryGraphFile] = "-q";
     options_key[OptionKeyword::DataGraphFile] = "-d";
-    options_key[OptionKeyword::Filter] = "-filter";
-    options_key[OptionKeyword::Order] = "-order";
-    options_key[OptionKeyword::Engine] = "-engine";
     options_key[OptionKeyword::MaxOutputEmbeddingNum] = "-num";
     options_key[OptionKeyword::TimeLimit] = "-time_limit";
-    options_key[OptionKeyword::DuplicatePath] = "-duplicate_path";
-    options_key[OptionKeyword::MemoryFile] = "-memory_file";
+    options_key[OptionKeyword::OutputFile] = "-o";
+    options_key[OptionKeyword::ConfPath] = "-conf";
     processOptions();
 };
 
@@ -21,24 +18,15 @@ void MatchingCommand::processOptions() {
     // Data graph file path
     options_value[OptionKeyword::DataGraphFile] = getCommandOption(options_key[OptionKeyword::DataGraphFile]);
 
-    // Filter Type
-    options_value[OptionKeyword::Filter] = getCommandOption(options_key[OptionKeyword::Filter]);
-
-    // Order Type
-    options_value[OptionKeyword::Order] = getCommandOption(options_key[OptionKeyword::Order]);
-
-    // Engine Type
-    options_value[OptionKeyword::Engine] = getCommandOption(options_key[OptionKeyword::Engine]);
-
-    // Maximum output embedding num.
+    // Maximum output embedding num
     options_value[OptionKeyword::MaxOutputEmbeddingNum] = getCommandOption(options_key[OptionKeyword::MaxOutputEmbeddingNum]);
 
     // Time Limit
     options_value[OptionKeyword::TimeLimit] = getCommandOption(options_key[OptionKeyword::TimeLimit]);
 
-    // Duplicate Path
-    options_value[OptionKeyword::DuplicatePath] = getCommandOption(options_key[OptionKeyword::DuplicatePath]);
+    // Output file
+    options_value[OptionKeyword::OutputFile] = getCommandOption(options_key[OptionKeyword::OutputFile]);
 
-    // Memory File
-    options_value[OptionKeyword::MemoryFile] = getCommandOption(options_key[OptionKeyword::MemoryFile]);
+    // Configuartion file path
+    options_value[OptionKeyword::ConfPath] = getCommandOption(options_key[OptionKeyword::ConfPath]);
 }

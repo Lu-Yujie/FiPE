@@ -313,13 +313,11 @@ static vector<ui> intersectMultiple(const ui** arrays, const ui* arrays_size, co
 
     // until pointers[*] >= arrays[*].size(), aka, one array reach the end
     while (true) {
-        // cout << "array_idx: " << array_idx << ", pointers: " << pointers[array_idx] << ", minVal: " << minVal << endl;
         if (pointers[array_idx] >= arrays_size[array_idx]) {
             return result;
         }
         while (arrays[array_idx][pointers[array_idx]] < minVal) {
             pointers[array_idx]++;
-            // cout << "jumped: " << arrays[array_idx][pointers[array_idx]] << ", pointers" << pointers[array_idx] << endl;
             if (pointers[array_idx] >= arrays_size[array_idx]) {
                 return result;
             }
@@ -327,7 +325,6 @@ static vector<ui> intersectMultiple(const ui** arrays, const ui* arrays_size, co
         if (arrays[array_idx][pointers[array_idx]] != minVal) {
             minVal = arrays[array_idx][pointers[array_idx]];
             cnt = 1;
-            // cout << "new minVal: " << minVal << endl;
         } else {
             cnt++;
             if (cnt == arrays_num) {

@@ -25,6 +25,7 @@ public:
   mpz_t embedding_step;   // #embeddings of one step
   mpz_t embedding_total;  // #embeddings of one enumeration
   mpz_t embedding_uncon;  // #embeddings of the step without potential conflict
+  mpz_t remained;
   bool uncon;             // indicates embedding_uncon is search or not
 
   FiPEIndep(ui qnum, ui dnum, ui num_cover, VertexID* order) {
@@ -54,6 +55,7 @@ public:
     mpz_init(embedding_total);
     mpz_init(embedding_uncon);
     mpz_init(label_embeddings);
+    mpz_init(remained);
   }
   ~FiPEIndep() {
     delete[] indep_con_cnt;
@@ -68,6 +70,7 @@ public:
     mpz_clear(embedding_total);
     mpz_clear(embedding_uncon);
     mpz_clear(label_embeddings);
+    mpz_clear(remained);
   }
 
   void homoEnum() {
@@ -216,10 +219,6 @@ public:
       mpz_add(embedding_level[depth], embedding_level[depth], embedding_level[depth+1]);
     }
 
-#ifdef ANALYZE_FUNC_MEMORY
-    mem::printVmRSS("Enumerate");
-#endif
-
     delete[] idx;
     delete[] cnt;
     delete[] un_con_cnt;
@@ -340,8 +339,8 @@ public:
     }
 
     if (cover_num == 1) {
-      ui nbr_cnt = 0;
-      const auto& nbrs = graph->getVertexNeighbors(order[0], nbr_cnt);
+      ui nbrs_cnt;
+      auto nbrs = graph->getVertexNeighbors(order[0], nbrs_cnt);
       order[cover_num++] = nbrs[0];
     }
 
@@ -389,8 +388,8 @@ public:
     }
 
     if (cover_num == 1) {
-      ui nbr_cnt = 0;
-      const auto& nbrs = graph->getVertexNeighbors(order[0], nbr_cnt);
+      ui nbrs_cnt;
+      auto nbrs = graph->getVertexNeighbors(order[0], nbrs_cnt);
       order[cover_num++] = nbrs[0];
     }
 

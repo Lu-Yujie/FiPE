@@ -1,5 +1,12 @@
-#ifndef CONFIG_H
-#define CONFIG_H
+#ifndef SUBGRAPHMATCHING_CONFIG_H
+#define SUBGRAPHMATCHING_CONFIG_H
+
+
+/**
+ * Set the maximum size of a query graph. By default, we set the value as 64.
+ */
+#define MAXIMUM_QUERY_GRAPH_SIZE 64
+#define HASH_TABLE_RATIO 1.2
 
 /**
  * Setting the value as 1 is to (1) enable the neighbor label frequency filter (i.e., NLF filter); and (2) enable
@@ -11,29 +18,36 @@
 #define OPTIMIZED_VLABELED_GRAPH 1
 
 /**
- * Define ANALYZE_PEAK_MEMORY to analyze peak memory consumption
- */
-// #define ANALYZE_PEAK_MEMORY
+ * have edge label or not
+*/
+// #define ELABELED_GRAPH
 
 /**
- * Define ANALYZE_FUNC_MEMORY to analyze function memory consumption
+ * Set intersection method.
+ * 0: Hybrid method; 1: Merge based set intersections.
  */
-//  #define ANALYZE_FUNC_MEMORY
+#define HYBRID 0
 
 /**
- * Define ANALYZE_DUPLICATE to enable the record the duplicate information
+ * Accelerate set intersection with SIMD instructions.
+ * 0: AVX2; 1: AVX512; 2: Basic;
  */
-// #define ANALYZE_DUPLICATE
+#define SI 0
 
 /**
- * Define ANALYZE_TIME to analyze time consumption of each segment
+ * Define ENABLE_FAILING_SET to enable the failing set pruning set intersection method.
  */
-// #define ANALYZE_TIME
+#define ENABLE_FAILING_SET
 
 /**
- * Define HOMOMORPHISM to support homomorphism semantics
+ * Define ANALYZE_MEMORY to analyze memory consumption
  */
-//  #define HOMOMORPHISM
+// #define ANALYZE_MEMORY
+
+/**
+ * Define FIPE_HOMOMORPHISM to analyze memory consumption
+ */
+#define FIPE_HOMOMORPHISM
 
 /**
  * Define minimal subset of candidates for backtracking

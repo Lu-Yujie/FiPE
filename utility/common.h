@@ -78,8 +78,6 @@ public:
 };
 
 class mem {  // the unit is KB
-public:
-  static std::ofstream mem_out;
   static size_t getVmPeak() {
     std::ifstream status("/proc/self/status");
     std::string line;
@@ -95,14 +93,7 @@ public:
     }
     return 0;
   }
-  static bool initMem(std::string file) {
-    mem_out.open(file, std::ios::out | std::ios::app);
-    return mem_out.is_open();
-  }
-  static void closeMem() {
-    mem_out.close();
-  }
-  static void printVmRSS(std::string prompt) {
+  static size_t getCurrentRSS() {
     std::ifstream status("/proc/self/status");
     std::string line;
     while (std::getline(status, line)) {
@@ -111,11 +102,12 @@ public:
             std::string key, unit;
             size_t value;
             iss >> key >> value >> unit;
-            mem_out << prompt << ": " << value << std::endl;
-            return;
+            std::cout << "value:" << value << std::endl;
+            return value;
         }
     }
-  }
+    return 0;
+}
 };
 
 #endif
