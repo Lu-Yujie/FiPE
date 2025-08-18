@@ -96,10 +96,13 @@ The enumeration methods that find all results.
 |General| Naive-Backtracking Search |
 |FiPE| Fine-grained and Powerful Equivalences |
 
-## Experiment Datasets
+## Experiments
 
-We have placed all the datasets used for testing in the paper at this link: [dataset_FiPE](https://github.com/Lu-Yujie/FiPE_dataset).
+### Datasets
+We have placed all the datasets used for testing in the paper at this link: [FiPE_dataset](https://github.com/Lu-Yujie/FiPE_dataset).
 
 ```bash
 7z x FiPE_dataset.7z
 ```
+### Scripts
+We have placed all the experiment scripts for the paper at this link: [FiPE_exp](https://github.com/Lu-Yujie/FiPE_exp).
