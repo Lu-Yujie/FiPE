@@ -19,7 +19,7 @@ make
 We provide 200 test cases along with the corresponding test script. The usage is as follows:
 
 ```bash
-python test.py ../build/matching/BS
+python test.py ../build/bin/BS
 ```
 
 If all 200 cases pass correctly, the following text will be displayed:
@@ -32,7 +32,7 @@ Additionally, we provide a script(_check_result.py_) for comparing results betwe
 
 ## Execute
 
-After compiling the source code, you can find the binary file 'BS' under the 'build/matching' directory.
+After compiling the source code, you can find the binary file 'BS' under the 'build/bin' directory.
 Execute the binary with the following command ./BS -d data_graph -q query_graph
 -filter filter_technique -order order_technique -engine engine_technique -num max_number_of_embeddings -time_limit max_execute_time,
 in which -d specifies the input of the data graphs and -q specifies the input of the query graphs.
