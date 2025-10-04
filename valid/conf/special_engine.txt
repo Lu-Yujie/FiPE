@@ -1,0 +1,2 @@
+wo_order: BSX, Partial
+wo_filter: VF3

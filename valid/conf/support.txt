@@ -1,0 +1,3 @@
+filter:  GQL, LDF, NLF, TSO, CFL, DPiso, RM, CaLiG
+order: GQL, DPiso, RM
+engine: BS1, RM, KSS, BSX, Partial
