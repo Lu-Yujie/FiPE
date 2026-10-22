@@ -37,7 +37,7 @@ int main(int argc, char** argv) {
     std::cout << "\tOrder Type: " << input_order_type << std::endl;
     std::cout << "\tEngine Type: " << input_engine_type << std::endl;
     std::cout << "\tOutput Limit: " << input_max_embedding_num << std::endl;
-    std::cout << "\tTime Limit (seconds): " << input_time_limit << std::endl;
+    std::cout << "\tTime Limit (milliseconds): " << input_time_limit << std::endl;
 #ifdef ANALYZE_DUPLICATE
     std::cout << "\tDuplicate Path: " << duplicate_path << std::endl;
 #endif
@@ -70,8 +70,8 @@ int main(int argc, char** argv) {
     query_graph->printGraphMetaData();
     std::cout << "-----" << std::endl;
     data_graph->printGraphMetaData();
-    int64_t time_limit; // 300s by default
-    sscanf(input_time_limit.c_str(), "%ld", &time_limit); // second
+    int64_t time_limit; // 1000 ms by default
+    sscanf(input_time_limit.c_str(), "%ld", &time_limit); // millisecond
     auto end_time = TimeOp::getClockNan();
     end_time += time_limit * 1000 * 1000;
 
