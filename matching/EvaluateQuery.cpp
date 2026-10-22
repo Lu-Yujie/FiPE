@@ -1688,6 +1688,9 @@ EvaluateQuery::comSharedCon(FiPEIndex& index, ui depth) {
                 }
                 if (vnbrs.size() == index.valid_cans_[nbr].back().size()) {
                     influenced[nbr][edge_valid_idx] = false;
+                    // the slot may still hold the set of an earlier edge that turned out invalid (the slot index
+                    // only advances for valid edges); comEdgeSubCon compares these sets, so leave it empty
+                    inf_cans[nbr][edge_valid_idx].clear();
                     continue;
                 }
                 influenced[nbr][edge_valid_idx] = true;
