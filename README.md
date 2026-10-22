@@ -19,13 +19,20 @@ make
 We provide 200 test cases along with the corresponding test script. The usage is as follows:
 
 ```bash
-python test.py ../build/bin/BS
+cd valid
+python valid.py ../build/bin/BS
 ```
 
 If all 200 cases pass correctly, the following text will be displayed:
 
 ```bash
 {your_method_name} engine passed the correctness check.
+```
+
+The regression tests of fixed bugs (small inputs whose counts were checked with independent implementations) run with
+
+```bash
+bash tests/regression/run.sh build/bin/BS
 ```
 
 Additionally, we provide a script(_check_result.py_) for comparing results between different methods as an auxiliary tool for verifying the correctness of the code. Please refer to the script comments for specific usage instructions.
