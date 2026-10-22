@@ -10,6 +10,9 @@
 
 class EvaluateQuery {
 public:
+    // set by an engine that stopped because the time limit was reached: the count is then a lower bound
+    static bool time_limit_reached;
+
     static void
     GeneralEngine(const Graph *data_graph, const Graph *query_graph, Edges ***edge_matrix, ui **candidates,
                   ui *candidates_count, ui *order, ui *pivot, size_t output_limit_num, size_t &call_count, mpz_t embedding_cnt,

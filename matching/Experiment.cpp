@@ -232,6 +232,7 @@ int main(int argc, char** argv) {
     printf("Preprocessing time (seconds): %.4lf\n", NANOSECTOSEC(preprocessing_time_in_ns));
     printf("Total time (seconds): %.4lf\n", NANOSECTOSEC(total_time_in_ns));
     gmp_printf("#Embeddings: %Zd\n", embedding_cnt);
+    printf("Timed Out: %d\n", EvaluateQuery::time_limit_reached ? 1 : 0);  // 1: the count is a lower bound
     printf("Call Count: %zu\n", call_count);
     printf("Per Call Count Time (nanoseconds): %.4lf\n", enumeration_time_in_ns / (call_count == 0 ? 1 : call_count));
 #ifdef ANALYZE_PEAK_MEMORY

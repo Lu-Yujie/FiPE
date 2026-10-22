@@ -9,7 +9,7 @@
 #   BS -d data.graph -q query.graph -filter <F> -order GQL -engine FiPE -num MAX -time_limit 60000
 # A case fails when the run crashes, prints no '#Embeddings' line or prints a different count. A case with a file
 # time_limit (milliseconds) runs with that limit instead: it must stop within the limit plus 5 s, and its count
-# may be lower than expected (a partial count) but never higher. Memory errors that do not crash are only
+# may be lower than expected (a partial count, then with 'Timed Out: 1') but never higher. Memory errors that do not crash are only
 # reported by a sanitizer build, e.g.
 #   cmake .. -DCMAKE_CXX_FLAGS="-fsanitize=address,undefined" && make
 set -u
@@ -50,6 +50,9 @@ for c in "${cases[@]}"; do
                 fail=$((fail + 1))
             elif ! decimal_le "$got" "$expected"; then
                 echo "FAIL $c ($f): count $got exceeds the total $expected"
+                fail=$((fail + 1))
+            elif [ "$got" != "$expected" ] && ! printf '%s\n' "$out" | grep -q '^Timed Out: 1$'; then
+                echo "FAIL $c ($f): partial count $got without 'Timed Out: 1'"
                 fail=$((fail + 1))
             else
                 echo "ok   $c ($f): $got in $ms ms (limit $limit ms)"

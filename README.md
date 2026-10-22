@@ -37,7 +37,7 @@ Execute the binary with the following command ./BS -d data_graph -q query_graph
 -filter filter_technique -order order_technique -engine engine_technique -num max_number_of_embeddings -time_limit max_execute_time,
 in which -d specifies the input of the data graphs and -q specifies the input of the query graphs.
 The -filter parameter gives the filtering method, the -order specifies the ordering method, and the -engine
-sets the enumeration method. The -num parameter sets the maximum number of embeddings that you would like to find. The time_time constrains the maximum execution time. If the number of embeddings enumerated reaches the limit or all the results have been found or the time limit is reached, then the program will terminate.
+sets the enumeration method. The -num parameter sets the maximum number of embeddings that you would like to find. The time_time constrains the maximum execution time. If the number of embeddings enumerated reaches the limit or all the results have been found or the time limit is reached, then the program will terminate. The output line `Timed Out: 1` means that the time limit stopped the search; `#Embeddings` is then the exact number of embeddings found so far, a lower bound of the total (`Timed Out: 0`: the count is complete).
 Set -num as 'MAX' to find all results.
 
 Example (Use the filtering method of CFL and order method of GraphQL to generate the candidate vertex sets and the matching order respectively.

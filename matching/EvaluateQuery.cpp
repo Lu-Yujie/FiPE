@@ -5,6 +5,8 @@
 #include <sys/stat.h>
 #include <fstream>
 
+bool EvaluateQuery::time_limit_reached = false;
+
 void EvaluateQuery::generateBN(const Graph *query_graph, ui *order, ui *pivot, ui **&bn, ui *&bn_count) {
     ui q_num = query_graph->getVerticesCount();
     bn_count = new ui[q_num];
@@ -95,6 +97,7 @@ EvaluateQuery::GeneralEngine(const Graph *data_graph, const Graph *query_graph, 
     while (true) {
         while (idx[cur_depth] < idx_count[cur_depth]) {
             if (TimeOp::getClockNan() >= time_limit) {
+                time_limit_reached = true;
                 goto EXIT;
             }
             ui valid_idx = valid_candidate_idx[cur_depth][idx[cur_depth]];
@@ -352,6 +355,7 @@ EvaluateQuery::FiPEEngine(const Graph *data_graph, const Graph *query_graph, Edg
     while (!comStartCans(index) || !comCurSpace(index, cur_depth)) {
         // the candidate chunks of a pair can fail one after another for a long time: check the limit here too
         if (TimeOp::getClockNan() >= time_limit) {
+            time_limit_reached = true;
             goto EXIT;
         }
         if (nxtSubCans(index, cur_depth) == false) goto EXIT;
@@ -361,6 +365,7 @@ EvaluateQuery::FiPEEngine(const Graph *data_graph, const Graph *query_graph, Edg
     while (true) {
         while (subInfo[cur_depth].subs.cur_s < subInfo[cur_depth].subs.c_cnt) {
             if (TimeOp::getClockNan() >= time_limit) {
+                time_limit_reached = true;
                 goto EXIT;
             }
             VertexID u = order[cur_depth];
@@ -398,6 +403,7 @@ EvaluateQuery::FiPEEngine(const Graph *data_graph, const Graph *query_graph, Edg
                 mpz_add(embedding_cnt, embedding_cnt, level_embeddings);
                 // time limit inside FiPEEnum: level_embeddings counts only the cover embeddings it completed
                 if (index.indepInfo->timed_out) {
+                    time_limit_reached = true;
                     goto EXIT;
                 }
                 // nxt batch
@@ -410,6 +416,7 @@ EvaluateQuery::FiPEEngine(const Graph *data_graph, const Graph *query_graph, Edg
                 bool nxt_valid = true;
                 while (!comCurSpace(index, cur_depth)) {
                     if (TimeOp::getClockNan() >= time_limit) {
+                        time_limit_reached = true;
                         goto EXIT;
                     }
                     if (!nxtSubCans(index, cur_depth)) {
@@ -430,6 +437,7 @@ EvaluateQuery::FiPEEngine(const Graph *data_graph, const Graph *query_graph, Edg
             if (cur_depth == 0) {
                 while (!comStartCans(index) || !comCurSpace(index, cur_depth)) {
                     if (TimeOp::getClockNan() >= time_limit) {
+                        time_limit_reached = true;
                         goto EXIT;
                     }
                     if (!nxtSubCans(index, cur_depth)) {
@@ -440,6 +448,7 @@ EvaluateQuery::FiPEEngine(const Graph *data_graph, const Graph *query_graph, Edg
             } else {
                while (!comCurSpace(index, cur_depth)) {
                     if (TimeOp::getClockNan() >= time_limit) {
+                        time_limit_reached = true;
                         goto EXIT;
                     }
                     if (nxtSubCans(index, cur_depth) == false) {
