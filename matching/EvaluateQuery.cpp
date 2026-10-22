@@ -1167,8 +1167,10 @@ EvaluateQuery::comEdgeSubCon(FiPEIndex& index, ui depth) {
     // c_edge_down_offset is initialized during edge building in comCurSpace
     c_edge_down_offset.resize(max_size+2);
     p_edge_down_offset.resize(max_size+2);
-    p_edge_up_idxs.resize(max_size);
-    c_edge_up_idxs.resize(max_size);
+    // one spare slot: the grouping loops below append an up candidate before they know whether it keeps an edge
+    // in the group, and drop it again if it does not; with every edge already kept, that slot is index max_size
+    p_edge_up_idxs.resize(max_size+1);
+    c_edge_up_idxs.resize(max_size+1);
     c_edge_down_idxs.resize(up2down.size());
     p_edge_down_idxs.resize(up2down.size());
     c_edge_up_offset[0] = 0; c_edge_up_offset[1] = up_cans.size();
