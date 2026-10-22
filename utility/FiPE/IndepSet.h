@@ -388,6 +388,12 @@ public:
       }
     }
 
+    // a single-edge query: both vertices have degree 1, so the loop selects none; the engine needs two cover
+    // vertices, so take vertex 0 and (below) its neighbour (a one-vertex query is handled by the engine)
+    if (cover_num == 0 && n >= 2) {
+      order[cover_num++] = 0;
+    }
+
     if (cover_num == 1) {
       ui nbr_cnt = 0;
       const auto& nbrs = graph->getVertexNeighbors(order[0], nbr_cnt);

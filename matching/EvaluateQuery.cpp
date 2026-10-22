@@ -303,6 +303,10 @@ EvaluateQuery::FiPEEngine(const Graph *data_graph, const Graph *query_graph, Edg
     auto total_time = TimeOp::getClockNan();
 #endif
     auto qnum = query_graph->getVerticesCount();
+    if (qnum == 1) {  // no cover pair to enumerate: every candidate of the vertex is an embedding
+        mpz_init_set_ui(embedding_cnt, candidates_count[0]);
+        return;
+    }
 
     // separate indep and cover vertices(min_vertex_cover)
     VertexID* order = new VertexID[qnum];
