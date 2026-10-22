@@ -150,6 +150,10 @@ public:
     }
 
     const ui * getVerticesByLabel(const LabelID id, ui& count) const {
+        if (id >= vlabels_count_) {  // e.g. a query label that does not occur in the data graph
+            count = 0;
+            return reverse_index_;
+        }
         count = reverse_index_offsets_[id + 1] - reverse_index_offsets_[id];
         return reverse_index_ + reverse_index_offsets_[id];
     }
