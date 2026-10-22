@@ -173,7 +173,6 @@ public:
     while (true) {
       while (idx[depth] < cnt[depth]) {
         auto u_idx = nodes[depth];
-        VertexID& v = cans[u_idx][idx[depth]];
         ui& cur_sep = sep_flags[u_idx][0];
         if (depth == nodes_num - 1) {
           ui tmp_cnt = 0;
@@ -191,6 +190,8 @@ public:
             }
             if (un_con_cnt[depth] == 0) break;
           } else {
+            // a candidate that may conflict downward: take it individually (idx[depth] - 1 < cur_sep)
+            VertexID& v = cans[u_idx][idx[depth] - 1];
             if (visited_v[v]) continue;
             visited_v[v] = true;
           }
