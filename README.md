@@ -106,3 +106,8 @@ We have placed all the datasets used for testing in the paper at this link: [FiP
 ```
 ### Scripts
 We have placed all the experiment scripts for the paper at this link: [FiPE_exp](https://github.com/Lu-Yujie/FiPE_exp).
+
+## License
+
+This project is released under the MIT License (see `LICENSE`). Third-party code included in this repository
+keeps its own license; see `THIRD_PARTY_NOTICES.md`.
