@@ -1339,6 +1339,7 @@ EvaluateQuery::comEdgeSubDis(FiPEIndex& index, ui depth) {
     p_edge_down_offset.resize(edge_num+1);
     c_edge_down_idxs.resize(edge_num);
     p_edge_down_idxs.resize(edge_num);
+    c_cnt = 1;  // one group of all edges (c_cnt still holds the number of down groups of comSub)
     c_edge_down_offset[0] = 0, c_edge_down_offset[1] = edge_num;
     for (ui i = 0; i < edge_num; i++) c_edge_down_idxs[i] = i;
     grouped.resize(edge_num);
