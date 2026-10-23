@@ -4,6 +4,7 @@
 
 #include "graph/graph.h"
 #include "gmp.h"
+#include "timeOp.h"
 using namespace std;
 
 class FiPEIndep {
@@ -26,6 +27,21 @@ public:
   mpz_t embedding_total;  // #embeddings of one enumeration
   mpz_t embedding_uncon;  // #embeddings of the step without potential conflict
   bool uncon;             // indicates embedding_uncon is search or not
+
+  // time limit (TimeOp::getClockNan() value) of the search; set by the engine
+  int64_t deadline = INT64_MAX;
+  bool timed_out = false;  // the deadline has passed: the current count is incomplete
+  ui poll_work = 0;        // work since the last clock read
+
+  // adds work units (the hot loops count in a local variable and report every few thousand units);
+  // reads the clock after about 4096 units; true once the deadline has passed
+  bool timeUp(ui work) {
+    poll_work += work;
+    if (poll_work < 4096) return timed_out;
+    poll_work = 0;
+    if (TimeOp::getClockNan() >= deadline) timed_out = true;
+    return timed_out;
+  }
 
   FiPEIndep(ui qnum, ui dnum, ui num_cover, VertexID* order) {
     qnum_ = qnum;
@@ -126,10 +142,25 @@ public:
         // 3.enumerate the nodes based on diff features of 4 parts
         // ** just 2 parts so far
         enum4Parts(sep_flag, nodes, nodes_num, cans, visited_v, label_embeddings);
+        if (timed_out) {  // stopped inside the label group: its count is incomplete, the caller discards the step
+          mpz_set_ui(embedding_step, 0);
+          return;
+        }
         mpz_mul(embedding_step, embedding_step, label_embeddings);
         if (mpz_cmp_ui(embedding_step, 0) == 0) return;
     }
     return;
+  }
+
+  // enum4Parts' time check: reports work to timeUp; once the deadline has passed, undoes the visited marks of the
+  // label group (its result is then discarded) and returns true
+  __attribute__((noinline, cold)) bool stopLabelGroup(ui work, const VertexID* nodes, ui nodes_num,
+                                                     std::vector<std::vector<VertexID>>& cans, bool* visited_v) {
+    if (!timeUp(work)) return false;
+    for (ui i = 0; i < nodes_num; i++) {
+      for (auto& can : cans[nodes[i]]) visited_v[can] = false;
+    }
+    return true;
   }
 
   // according to indep_con_cnt info, seperate v_cans into two parts, return the #first_part(true)
@@ -155,8 +186,8 @@ public:
    * 4 parts: up-down,up-x,x-down,x-x; down&x 2 parts so far
    * TODO: opt to three parts
    */
-  static void enum4Parts(ui **&sep_flags, const VertexID* nodes, ui nodes_num,
-                        std::vector<std::vector<VertexID>>& cans, bool *&visited_v, mpz_t cur_cnt) {
+  void enum4Parts(ui **&sep_flags, const VertexID* nodes, ui nodes_num,
+                 std::vector<std::vector<VertexID>>& cans, bool *&visited_v, mpz_t cur_cnt) {
     ui depth = 0;
     ui* idx = new ui[nodes_num];
     ui* cnt = new ui[nodes_num];
@@ -170,11 +201,20 @@ public:
     }
     mpz_set_ui(embedding_level[depth], 0);
     un_con_cnt[depth] = 0;
+    ui work = 0;  // candidates scanned (leaves, non-conflicting blocks) since the last report to timeUp
+    // time limit, checked after every ~2^16 scanned candidates (not per step: that costs several percent)
+#define FIPE_ENUM_TIME_CHECK                                                    \
+    if (__builtin_expect(work >= 65536, 0)) {                                   \
+      if (stopLabelGroup(work, nodes, nodes_num, cans, visited_v)) goto STOP;  \
+      work = 0;                                                                 \
+    }
     while (true) {
       while (idx[depth] < cnt[depth]) {
         auto u_idx = nodes[depth];
         ui& cur_sep = sep_flags[u_idx][0];
         if (depth == nodes_num - 1) {
+          work += cans[u_idx].size() + 1;
+          FIPE_ENUM_TIME_CHECK
           ui tmp_cnt = 0;
           for (ui i = 0; i < cans[u_idx].size(); i++) {
             if (!visited_v[cans[u_idx][i]]) tmp_cnt++;
@@ -184,6 +224,8 @@ public:
         } else {
           idx[depth]++;
           if (idx[depth] > cur_sep) {
+            work += cans[u_idx].size() - cur_sep + 1;
+            FIPE_ENUM_TIME_CHECK
             for (ui i = cur_sep; i < cans[u_idx].size(); i++) {
               auto& can = cans[u_idx][i];
               if (!visited_v[can]) un_con_cnt[depth]++;
@@ -216,7 +258,10 @@ public:
       }
       mpz_add(embedding_level[depth], embedding_level[depth], embedding_level[depth+1]);
     }
+    poll_work += work;  // completed: report the remaining work without reading the clock
+#undef FIPE_ENUM_TIME_CHECK
 
+    STOP:
 #ifdef ANALYZE_FUNC_MEMORY
     mem::printVmRSS("Enumerate");
 #endif
