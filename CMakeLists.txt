@@ -7,7 +7,7 @@ include_directories(
 )
 
 set(CMAKE_CXX_FLAGS
-        "${CMAKE_CXX_FLAGS} -std=c++14 -O0 -g -Wall -march=native -pthread")
+        "${CMAKE_CXX_FLAGS} -std=c++14 -O3 -g -Wall -march=native -pthread")
         # "${CMAKE_CXX_FLAGS} -std=c++14 -O0 -g -Wall -march=native -pthread -fsanitize=address")
 
 add_subdirectory(utility)
