@@ -306,6 +306,13 @@ EvaluateQuery::FiPEEngine(const Graph *data_graph, const Graph *query_graph, Edg
     auto total_time = TimeOp::getClockNan();
 #endif
     auto qnum = query_graph->getVerticesCount();
+    // the edges of a non-adjacent cover pair are numbered up_idx * |down chunk| + down_idx in 32-bit indices
+    // (comEdgeSubDis, edgeEqu.h), with |up candidates| <= |V(G)| and |down chunk| <= MIN_SUBCANS
+    if ((unsigned long long)data_graph->getVerticesCount() * MIN_SUBCANS > 0xFFFFFFFFULL) {
+        std::cout << "The FiPE engine supports data graphs with |V| * " << MIN_SUBCANS << " < 2^32 (32-bit edge "
+                  << "indices); this one has " << data_graph->getVerticesCount() << " vertices." << std::endl;
+        exit(-1);
+    }
     if (qnum == 1) {  // no cover pair to enumerate: every candidate of the vertex is an embedding
         mpz_init_set_ui(embedding_cnt, candidates_count[0]);
         return;

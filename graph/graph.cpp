@@ -84,7 +84,16 @@ void Graph::loadGraphFromFile(const std::string &file_path) {
     }
 
     char type;
-    infile >> type >> vertices_count_ >> edges_count_;
+    unsigned long long vertices_count, edges_count;
+    infile >> type >> vertices_count >> edges_count;
+    // vertex ids, CSR offsets and the edge indices of the engines are 32-bit: 2|E| must fit in an unsigned int
+    if (!infile || vertices_count >= (1ULL << 32) || 2 * edges_count > 0xFFFFFFFFULL) {
+        std::cout << "The graph file " << file_path << " has " << vertices_count << " vertices and " << edges_count
+                  << " edges; this program supports |V| < 2^32 and 2|E| < 2^32." << std::endl;
+        exit(-1);
+    }
+    vertices_count_ = (ui)vertices_count;
+    edges_count_ = (ui)edges_count;
     offsets_ = new ui[vertices_count_ +  1];
     offsets_[0] = 0;
 
