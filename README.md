@@ -28,6 +28,17 @@ Execute the binary with the following command ./BS -d data_graph -q query_graph
 |-conf| the path to your configuration files which specify methods to run |
 |-o| the output file |
 
+The -time_limit parameter is in milliseconds and applies to each method separately. In the output file, the second
+column is 1 when the time limit stopped that method; its count is then the exact number of embeddings found so far,
+a lower bound of the total (0: the count is complete).
+
+The regression tests of fixed bugs (small inputs whose counts were checked with independent implementations) run the
+FiPE engine of this binary. Their expected counts are embeddings, so build without FIPE_HOMOMORPHISM
+(`configuration/config.h`) first:
+
+```bash
+bash tests/regression/run.sh build/bin/BS
+```
 
 Example (Use the filtering method of CFL and order method of GraphQL to generate the candidate vertex sets and the matching order respectively.
 Enumerate results with the set-intersection based local candidate computation method):
@@ -97,8 +108,16 @@ The enumeration methods that find all results.
 Besides, we also integrate VEQ to this framework.
 ## Experiment Datasets
 
-We have placed all the datasets used for testing in the paper at this link: [dataset_FiPE](https://github.com/Lu-Yujie/FiPE_dataset).
+### Datasets
+We have placed all the datasets used for testing in the paper at this link: [FiPE_dataset](https://huggingface.co/datasets/Lu-Yujie/FiPE_dataset).
 
 ```bash
 7z x FiPE_dataset.7z
 ```
+### Scripts
+We have placed all the experiment scripts for the paper at this link: [FiPE_exp](https://github.com/Lu-Yujie/FiPE_exp).
+
+## License
+
+This project is released under the MIT License (see `LICENSE`). Third-party code included in this repository
+keeps its own license; see `THIRD_PARTY_NOTICES.md`.

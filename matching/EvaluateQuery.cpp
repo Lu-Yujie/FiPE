@@ -1466,11 +1466,25 @@ EvaluateQuery::FiPEEngine(const Graph *data_graph, const Graph *query_graph, Edg
                              ui **candidates, ui *candidates_count,
                              size_t output_limit_num, size_t &call_count, mpz_t embedding_cnt, int64_t& time_limit) {
     auto qnum = query_graph->getVerticesCount();
+    // the edges of a non-adjacent cover pair are numbered up_idx * |down chunk| + down_idx in 32-bit indices
+    // (comEdgeSubDis, edgeEqu.h), with |up candidates| <= |V(G)| and |down chunk| <= MIN_SUBCANS
+    if ((unsigned long long)data_graph->getVerticesCount() * MIN_SUBCANS > 0xFFFFFFFFULL) {
+        std::cout << "The FiPE engine supports data graphs with |V| * " << MIN_SUBCANS << " < 2^32 (32-bit edge "
+                  << "indices); this one has " << data_graph->getVerticesCount() << " vertices." << std::endl;
+        exit(-1);
+    }
+    if (qnum == 1) {  // no cover pair to enumerate: every candidate of the vertex is an embedding
+        mpz_init_set_ui(embedding_cnt, candidates_count[0]);
+        return false;
+    }
+
+    // separate indep and cover vertices(min_vertex_cover)
     VertexID* order = new VertexID[qnum];
     ui num_cover = FiPEIndep::indepSetOnDegree(query_graph, order);
     // main data structure
     FiPEIndex index(query_graph, data_graph, edge_matrix, candidates, candidates_count, num_cover, order);
     EdgeSub::down_record.resize(data_graph->getVerticesCount(), (ui)-1);
+    index.indepInfo->deadline = time_limit;  // FiPEEnum checks it too
 
     // auxiliary data structure
     bool overtime = false;
@@ -1482,6 +1496,11 @@ EvaluateQuery::FiPEEngine(const Graph *data_graph, const Graph *query_graph, Edg
 
     splitCans(index, cur_depth);
     while (!comStartCans(index) || !comCurSpace(index, cur_depth)) {
+        // the candidate chunks of a pair can fail one after another for a long time: check the limit here too
+        if (TimeOp::getClockNan() >= time_limit) {
+            overtime = true;
+            goto EXIT;
+        }
         if (nxtSubCans(index, cur_depth) == false) goto EXIT;
     }
     comSub(index, cur_depth);
@@ -1504,6 +1523,11 @@ EvaluateQuery::FiPEEngine(const Graph *data_graph, const Graph *query_graph, Edg
                 // mpz_ui_sub(index.indepInfo->remained, output_limit_num, embedding_cnt);
                 FiPEEnum(index);
                 mpz_add(embedding_cnt, embedding_cnt, level_embeddings);
+                // time limit inside FiPEEnum: level_embeddings counts only the cover embeddings it completed
+                if (index.indepInfo->timed_out) {
+                    overtime = true;
+                    goto EXIT;
+                }
                 if (output_limit_num != (size_t)-1 && mpz_cmp_ui(embedding_cnt, output_limit_num) > 0) {
                     goto EXIT;
                 }
@@ -1515,6 +1539,10 @@ EvaluateQuery::FiPEEngine(const Graph *data_graph, const Graph *query_graph, Edg
                 splitCans(index, cur_depth);
                 bool nxt_valid = true;
                 while (!comCurSpace(index, cur_depth)) {
+                    if (TimeOp::getClockNan() >= time_limit) {
+                        overtime = true;
+                        goto EXIT;
+                    }
                     if (!nxtSubCans(index, cur_depth)) {
                         index.subCans_[cur_depth+1].splitted = false;
                         nxt_valid = false;
@@ -1532,6 +1560,10 @@ EvaluateQuery::FiPEEngine(const Graph *data_graph, const Graph *query_graph, Edg
         if (nxtSubCans(index, cur_depth)) {
             if (cur_depth == 0) {
                 while (!comStartCans(index) || !comCurSpace(index, cur_depth)) {
+                    if (TimeOp::getClockNan() >= time_limit) {
+                        overtime = true;
+                        goto EXIT;
+                    }
                     if (!nxtSubCans(index, cur_depth)) {
                         nxt_valid = false;
                         break;
@@ -1539,6 +1571,10 @@ EvaluateQuery::FiPEEngine(const Graph *data_graph, const Graph *query_graph, Edg
                 }
             } else {
                while (!comCurSpace(index, cur_depth)) {
+                    if (TimeOp::getClockNan() >= time_limit) {
+                        overtime = true;
+                        goto EXIT;
+                    }
                     if (nxtSubCans(index, cur_depth) == false) {
                         nxt_valid = false;
                         break;
@@ -1979,8 +2015,16 @@ EvaluateQuery::FiPEEnum(FiPEIndex& index) {
     idx[depth] = 0;
     static ui con_num;  // record the conflicts number
     con_num = 0;
+    ui work = 0;  // edges tried since the last report to timeUp
     while(true) {
         while(idx[depth] < edges_idxs[depth].size()) {
+            if (++work >= 256) {
+                if (index.indepInfo->timeUp(work)) {
+                    // time limit: embedding_total holds the exact count of the cover embeddings completed so far
+                    goto STOP;
+                }
+                work = 0;
+            }
             ui up_idx, down_idx;
             auto& edge_idx =  edges_idxs[depth][idx[depth]];
             idx[depth]++;
@@ -2013,6 +2057,9 @@ EvaluateQuery::FiPEEnum(FiPEIndex& index) {
                     index.indepInfo->homoEnum();
 #else
                     index.indepInfo->enumeration(index.q_graph_);
+                    if (index.indepInfo->timed_out) {  // this step is incomplete: do not add it
+                        goto STOP;
+                    }
 #endif
                     if (con_num == 0) {  // no conflicts, record the results
                         mpz_set(embedding_uncon, embedding_step);
@@ -2085,6 +2132,7 @@ EvaluateQuery::FiPEEnum(FiPEIndex& index) {
         visited_v[down] = false;
     }
 
+    STOP:
 #ifdef ANALYZE_TIME
     FiPEIndex::enumerate_time += TimeOp::getClockNan() - start_time;
 #endif
@@ -2273,8 +2321,10 @@ EvaluateQuery::comEdgeSubCon(FiPEIndex& index, ui depth) {
     // c_edge_down_offset is initialized during edge building in comCurSpace
     c_edge_down_offset.resize(max_size+2);
     p_edge_down_offset.resize(max_size+2);
-    p_edge_up_idxs.resize(max_size);
-    c_edge_up_idxs.resize(max_size);
+    // one spare slot: the grouping loops below append an up candidate before they know whether it keeps an edge
+    // in the group, and drop it again if it does not; with every edge already kept, that slot is index max_size
+    p_edge_up_idxs.resize(max_size+1);
+    c_edge_up_idxs.resize(max_size+1);
     c_edge_down_idxs.resize(up2down.size());
     p_edge_down_idxs.resize(up2down.size());
     c_edge_up_offset[0] = 0; c_edge_up_offset[1] = up_cans.size();
@@ -2437,6 +2487,7 @@ EvaluateQuery::comEdgeSubDis(FiPEIndex& index, ui depth) {
     p_edge_down_offset.resize(edge_num+1);
     c_edge_down_idxs.resize(edge_num);
     p_edge_down_idxs.resize(edge_num);
+    c_cnt = 1;  // one group of all edges (c_cnt still holds the number of down groups of comSub)
     c_edge_down_offset[0] = 0, c_edge_down_offset[1] = edge_num;
     for (ui i = 0; i < edge_num; i++) c_edge_down_idxs[i] = i;
     grouped.resize(edge_num);
@@ -2789,6 +2840,9 @@ EvaluateQuery::comSharedCon(FiPEIndex& index, ui depth) {
                 }
                 if (vnbrs.size() == index.valid_cans_[nbr].back().size()) {
                     influenced[nbr][edge_valid_idx] = false;
+                    // the slot may still hold the set of an earlier edge that turned out invalid (the slot index
+                    // only advances for valid edges); comEdgeSubCon compares these sets, so leave it empty
+                    inf_cans[nbr][edge_valid_idx].clear();
                     continue;
                 }
                 influenced[nbr][edge_valid_idx] = true;

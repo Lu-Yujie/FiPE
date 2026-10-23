@@ -29,9 +29,11 @@ def check_correctness(binary_path, data_graph_path, query_folder_path, expected_
     query_graph_path_list = sorted(query_graph_path_list)
 
     # check the correctness of FiPE engine.
+    # -time_limit is in milliseconds (default 1000); a run stopped by it would print a partial count
+    failures = 0
     for query_graph_path in query_graph_path_list:
         execution_args = generate_args(binary_path, '-d', data_graph_path, '-q', query_graph_path, '-filter', 'LDF',
-                                       '-order', 'GQL', '-engine', 'FiPE')
+                                       '-order', 'GQL', '-engine', 'FiPE', '-num', 'MAX', '-time_limit', '3600000')
 
         (rc, std_output, std_error) = execute_binary(execution_args)
         query_graph_name = os.path.splitext(os.path.basename(query_graph_path))[0]
@@ -47,6 +49,7 @@ def check_correctness(binary_path, data_graph_path, query_folder_path, expected_
             if embedding_num != expected_embedding_num:
                 print('FiPE engine {0} is wrong. Expected {1}, Output {2}'.format(query_graph_name,
                         expected_embedding_num, embedding_num))
+                failures += 1
                 # print(std_output)
                 # print(std_error)
                 # exit(-1)
@@ -55,6 +58,10 @@ def check_correctness(binary_path, data_graph_path, query_folder_path, expected_
             print(std_output)
             print(std_error)
             exit(-1)
+    if failures:
+        print('FiPE engine failed the correctness check on {0} of {1} queries.'.format(failures,
+                len(query_graph_path_list)))
+        exit(1)
     print('FiPE engine passed the correctness check.')
 
 
@@ -66,7 +73,7 @@ if __name__ == '__main__':
 
     # load expected results.
     input_expected_results = {}
-    input_expected_results_file = 'expected_output.res'
+    input_expected_results_file = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'expected_output.res')
     with open(input_expected_results_file, 'r') as f:
         for line in f:
             if line:
